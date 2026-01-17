@@ -1,28 +1,33 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const connectDB = require('./config/db');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// Enable CORS for all origins
+app.use(cors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}));
+
+// Connect to Database
+connectDB();
+
+// Body parser
 app.use(express.json());
 
-// Health Check Route
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'UP',
-        message: 'Andaman Backend is running',
-        timestamp: new Date().toISOString()
-    });
-});
+// Routes
+app.use('/health', require('./routes/health'));
+app.use('/api/v1/auth', require('./routes/auth'));
 
-// Root Route
 app.get('/', (req, res) => {
-    res.send('Welcome to Andaman API');
+    res.send('Andaman API is running!');
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(port, '::', () => {
+    console.log(`Server is listening at http://localhost:${port}`);
 });
