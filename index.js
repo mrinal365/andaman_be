@@ -23,6 +23,8 @@ app.use(express.json());
 // Routes
 app.use('/health', require('./routes/health'));
 app.use('/api/v1/auth', require('./routes/auth'));
+app.use('/api/v1/chat', require('./routes/chatRoutes'));
+app.use('/api/v1/message', require('./routes/messageRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Andaman API is running!');
