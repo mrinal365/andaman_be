@@ -70,6 +70,17 @@ exports.login = async (req, res, next) => {
             });
         }
 
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        // Update lastSeen
+        user.lastSeen = Date.now();
+        await user.save();
+
         sendTokenResponse(user, 200, res);
     } catch (err) {
         res.status(400).json({
@@ -97,6 +108,24 @@ exports.getMe = async (req, res, next) => {
             message: err.message
         });
     }
+};
+
+// @desc    Get all users (search via ?search=)
+// @route   GET /api/v1/user?search=
+// @access  Private
+exports.allUsers = async (req, res) => {
+    const keyword = req.query.search
+        ? {
+            $or: [
+                { name: { $regex: req.query.search, $options: 'i' } },
+                { email: { $regex: req.query.search, $options: 'i' } },
+                { handle: { $regex: req.query.search, $options: 'i' } }
+            ]
+        }
+        : {};
+
+    const users = await User.find(keyword).find({ _id: { $ne: req.user._id } });
+    res.send(users);
 };
 
 // Get token from model, create cookie and send response
