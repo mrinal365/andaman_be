@@ -62,6 +62,10 @@ const UserSchema = new mongoose.Schema({
         followers: { type: Number, default: 0 },
         following: { type: Number, default: 0 }
     },
+    lastSeen: {
+        type: Date,
+        default: null
+    },
     settings: {
         theme: {
             type: String,
@@ -79,9 +83,9 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Encrypt password using bcrypt
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);
