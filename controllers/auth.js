@@ -1,4 +1,8 @@
 const User = require('../models/User');
+const { OAuth2Client } = require('google-auth-library');
+const crypto = require('crypto');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIEN_ID);
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
@@ -70,16 +74,9 @@ exports.login = async (req, res, next) => {
             });
         }
 
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
-        }
-
-        // Update lastSeen
-        user.lastSeen = Date.now();
-        await user.save();
+        // // Update lastSeen : not required now not the best approach - removed lastseen from user model 
+        // user.lastSeen = Date.now();
+        // await user.save();
 
         sendTokenResponse(user, 200, res);
     } catch (err) {
@@ -126,6 +123,79 @@ exports.allUsers = async (req, res) => {
 
     const users = await User.find(keyword).find({ _id: { $ne: req.user._id } });
     res.send(users);
+};
+
+// @desc    Google login
+// @route   POST /api/v1/auth/google
+// @access  Public
+exports.googleLogin = async (req, res, next) => {
+    try {
+        const { token } = req.body;
+
+        // Fetch user info from Google using access token
+        const googleRes = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`);
+        const googleData = await googleRes.json();
+
+        if (!googleData.email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Google token'
+            });
+        }
+
+        const { email, name, picture } = googleData;
+
+        let user = await User.findOne({ email });
+        let isNewUser = false;
+
+        if (!user) {
+            isNewUser = true;
+            // Generate unique handle
+            let baseHandle = name.replace(/\s+/g, '').toLowerCase();
+            let isHandleUnique = false;
+            let finalHandle = baseHandle;
+
+            while (!isHandleUnique) {
+                const randomNum = Math.floor(1000000000 + Math.random() * 9000000000);
+                finalHandle = `${baseHandle}${randomNum}`;
+                const existingHandle = await User.findOne({ handle: finalHandle });
+                if (!existingHandle) {
+                    isHandleUnique = true;
+                }
+            }
+
+            // Generate random 20 digit password
+            const randomPassword = crypto.randomBytes(10).toString('hex');
+
+            user = await User.create({
+                name,
+                email,
+                handle: finalHandle,
+                password: randomPassword,
+                avatar: picture || 'default-avatar.png'
+            });
+        }
+
+        const jwtToken = user.getSignedJwtToken();
+
+        res.status(200).json({
+            success: true,
+            token: jwtToken,
+            isNewUser,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                handle: user.handle,
+                avatar: user.avatar
+            }
+        });
+    } catch (err) {
+        res.status(400).json({
+            success: false,
+            message: 'Google login failed: ' + err.message
+        });
+    }
 };
 
 // Get token from model, create cookie and send response

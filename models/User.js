@@ -35,6 +35,10 @@ const UserSchema = new mongoose.Schema({
     coverImage: {
         type: String
     },
+    coverPosition: {
+        type: Number,
+        default: 50
+    },
     bio: {
         type: String
     },
@@ -75,6 +79,10 @@ const UserSchema = new mongoose.Schema({
         emailNotifications: { type: Boolean, default: true },
         pushNotifications: { type: Boolean, default: true },
         isPrivateProfile: { type: Boolean, default: false }
+    },
+    tags: {
+        type: [String],
+        default: []
     },
     joinedAt: {
         type: Date,
