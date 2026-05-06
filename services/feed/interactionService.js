@@ -24,8 +24,8 @@ exports.togglePostLike = async (postId, userId) => {
         recipient: post.authorId,
         sender: userId,
         type: "likePost",
-        title: "Someone liked your post",
-        body: "Your post received a new like",
+        title: "New Like!",
+        body: `liked your post. See who else is reacting!`,
         data: { postId },
       });
     }
@@ -55,8 +55,8 @@ exports.toggleCommentLike = async (commentId, userId) => {
         recipient: comment.authorId,
         sender: userId,
         type: "likeComment",
-        title: "Someone liked your comment",
-        body: "Your comment received a new like",
+        title: "Comment Liked!",
+        body: `liked your comment: "${comment.text.slice(0, 30)}..."`,
         data: { commentId, postId: comment.postId },
       });
     }
@@ -131,8 +131,8 @@ exports.resharePost = async (postId, userId) => {
       recipient: post.authorId,
       sender: userId,
       type: "resharePost",
-      title: "Someone reshared your post",
-      body: "Your post was reshared",
+      title: "Post Reshared!",
+      body: `shared your post with their network.`,
       data: { postId },
     });
   }

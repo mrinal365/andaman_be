@@ -42,8 +42,8 @@ exports.followUser = async (req, res, next) => {
             recipient: targetUserId,
             sender: userId,
             type: "follow",
-            title: "You have a new follower",
-            body: `${req.user.name} started following you`,
+            title: "New Connection!",
+            body: `is now following your updates. Say hi!`,
             data: { followerId: userId },
         });
 
