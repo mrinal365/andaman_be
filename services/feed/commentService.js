@@ -28,7 +28,7 @@ exports.addComment = async (postId, userId, text, taggedUsers = []) => {
 
     // 🔥 populate author
     const populatedComment = await Comment.findById(comment._id)
-        .populate("authorId", "name avatar verified")
+        .populate("authorId", "name avatar verified _id")
         .populate("taggedUsers", "name handle avatar verified _id")
         .lean();
     // 🔥 rename authorId → user

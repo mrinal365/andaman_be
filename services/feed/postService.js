@@ -76,8 +76,7 @@ exports.createPost = async (userId, payload) => {
 // ======================
 // GET POST BY ID
 // ======================
-exports.getPostById = async (postId) => {
-
+exports.getPostById = async (postId, userId = null) => {
     const post = await Post.findOne({
         _id: postId,
         status: "published"
@@ -86,6 +85,42 @@ exports.getPostById = async (postId) => {
     .lean();
 
     if (!post) throw new Error("Post not found");
+
+    // Attach viewerState if userId provided
+    post.viewerState = {
+        liked: false,
+        saved: false,
+        vote: 0,
+        followingAuthor: false
+    };
+
+    if (userId) {
+        const Interaction = require("../../models/feed/Interactions");
+        const interactions = await Interaction.find({
+            userId,
+            postId: post._id
+        }).lean();
+
+        interactions.forEach(i => {
+            if (i.type === "likePost") post.viewerState.liked = true;
+            if (i.type === "savePost") post.viewerState.saved = true;
+            if (i.type === "votePost") post.viewerState.vote = i.value || 0;
+        });
+
+        // Check if following author
+        if (post.authorId) {
+            const Follow = require("../../models/Follow");
+            const follow = await Follow.findOne({
+                followerId: userId,
+                followingId: post.authorId._id
+            }).lean();
+            post.viewerState.followingAuthor = !!follow;
+        }
+    }
+
+    // Normalize authorId to author for frontend consistency
+    post.author = post.authorId;
+    delete post.authorId;
 
     return post;
 };
