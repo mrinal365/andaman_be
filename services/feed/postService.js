@@ -1,5 +1,6 @@
 const Post = require("../../models/feed/Post");
 const User = require("../../models/User");
+const notificationService = require("../notification/notificationService");
 
 
 // ======================
@@ -7,7 +8,7 @@ const User = require("../../models/User");
 // ======================
 exports.createPost = async (userId, payload) => {
 
-    const { type, content, images = [] } = payload;
+    const { type, content, images = [], taggedUsers = [] } = payload;
 
     if (!["guide", "news", "update"].includes(type)) {
         throw new Error("Invalid post type");
@@ -33,7 +34,8 @@ exports.createPost = async (userId, payload) => {
         createdAt: new Date(),
         images,
         content,
-        feed
+        feed,
+        taggedUsers
     });
 
     // update the user schea also
@@ -45,6 +47,22 @@ exports.createPost = async (userId, payload) => {
     // populate author
     // ✅ populate author safely
     await post.populate("authorId", "name avatar verified");
+    await post.populate("taggedUsers", "_id name handle avatar verified");
+
+    // 🔔 Notify tagged users
+    if (taggedUsers && taggedUsers.length > 0) {
+        const author = await User.findById(userId).select("name");
+        taggedUsers.forEach(taggedId => {
+            notificationService.send({
+                recipient: taggedId,
+                sender: userId,
+                type: "tagPost",
+                title: `${author?.name || 'Someone'} tagged you in a post`,
+                body: feed.previewText.slice(0, 80),
+                data: { postId: post._id },
+            });
+        });
+    }
 
     const obj = post.toObject();
     obj.author = obj.authorId;

@@ -101,3 +101,27 @@ exports.updateUserProfile = async (req, res, next) => {
         next(err);
     }
 };
+
+// @desc    Search users by name or handle
+// @route   GET /api/users/search?q=...
+// @access  Private
+exports.searchUsers = async (req, res, next) => {
+    try {
+        const query = req.query.q || '';
+        if (!query.trim()) {
+            return res.json([]);
+        }
+
+        const regex = new RegExp(query, 'i');
+        const users = await User.find({
+            $or: [{ name: regex }, { handle: regex }]
+        })
+        .select('_id name handle avatar verified')
+        .limit(20)
+        .lean();
+
+        res.json(users);
+    } catch (err) {
+        next(err);
+    }
+};

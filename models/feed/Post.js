@@ -70,7 +70,12 @@ const postSchema = new mongoose.Schema({
 
   content: contentSchema,
 
-  stats: statsSchema
+  stats: statsSchema,
+
+  taggedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }]
 
 });
 

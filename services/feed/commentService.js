@@ -6,7 +6,7 @@ const notificationService = require("../notification/notificationService");
 // =======================
 // ADD COMMENT TO POST
 // =======================
-exports.addComment = async (postId, userId, text) => {
+exports.addComment = async (postId, userId, text, taggedUsers = []) => {
 
     if (!text || !text.trim()) {
         throw new Error("Comment text required");
@@ -16,7 +16,8 @@ exports.addComment = async (postId, userId, text) => {
         postId,
         authorId: userId,
         text,
-        parentCommentId: null
+        parentCommentId: null,
+        taggedUsers
     });
 
     // increment post comment counter
@@ -28,6 +29,7 @@ exports.addComment = async (postId, userId, text) => {
     // 🔥 populate author
     const populatedComment = await Comment.findById(comment._id)
         .populate("authorId", "name avatar verified")
+        .populate("taggedUsers", "name handle avatar verified _id")
         .lean();
     // 🔥 rename authorId → user
     populatedComment.user = populatedComment.authorId;
@@ -46,6 +48,21 @@ exports.addComment = async (postId, userId, text) => {
         });
     }
 
+    // 🔔 Notify tagged users
+    if (taggedUsers && taggedUsers.length > 0) {
+        const author = await require("../../models/User").findById(userId).select("name");
+        taggedUsers.forEach(taggedId => {
+            notificationService.send({
+                recipient: taggedId,
+                sender: userId,
+                type: "tagComment",
+                title: `${author?.name || 'Someone'} tagged you in a comment`,
+                body: text.slice(0, 80),
+                data: { postId, commentId: comment._id },
+            });
+        });
+    }
+
     return populatedComment;
 };
 
@@ -54,7 +71,7 @@ exports.addComment = async (postId, userId, text) => {
 // =======================
 // REPLY TO COMMENT
 // =======================
-exports.replyComment = async (parentCommentId, userId, text) => {
+exports.replyComment = async (parentCommentId, userId, text, taggedUsers = []) => {
 
     if (!text || !text.trim()) {
         throw new Error("Reply text required");
@@ -64,11 +81,12 @@ exports.replyComment = async (parentCommentId, userId, text) => {
 
     if (!parent) throw new Error("Parent comment not found");
 
-    const reply = await Comment.create({
+    const comment = await Comment.create({
         postId: parent.postId,
         authorId: userId,
         text,
-        parentCommentId
+        parentCommentId,
+        taggedUsers
     });
 
     // increment parent reply counter
@@ -86,6 +104,7 @@ exports.replyComment = async (parentCommentId, userId, text) => {
     // 🔥 populate author and rename for consistency
     const populatedReply = await Comment.findById(reply._id)
         .populate("authorId", "name avatar verified _id")
+        .populate("taggedUsers", "name handle avatar verified _id")
         .lean();
 
     populatedReply.user = populatedReply.authorId;
@@ -103,6 +122,21 @@ exports.replyComment = async (parentCommentId, userId, text) => {
         });
     }
 
+    // 🔔 Notify tagged users
+    if (taggedUsers && taggedUsers.length > 0) {
+        const author = await require("../../models/User").findById(userId).select("name");
+        taggedUsers.forEach(taggedId => {
+            notificationService.send({
+                recipient: taggedId,
+                sender: userId,
+                type: "tagComment",
+                title: `${author?.name || 'Someone'} tagged you in a reply`,
+                body: text.slice(0, 80),
+                data: { postId: parent.postId, commentId: parentCommentId, replyId: reply._id },
+            });
+        });
+    }
+
     return populatedReply;
 };
 
@@ -117,6 +151,7 @@ exports.getPostComments = async (postId, userId = null) => {
     // fetch all comments for post
     const comments = await Comment.find({ postId })
         .populate("authorId", "name avatar verified _id")
+        .populate("taggedUsers", "name handle avatar verified _id")
         .sort({ createdAt: 1 })
         .lean();
 

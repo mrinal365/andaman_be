@@ -3,7 +3,8 @@ const router = express.Router();
 const {
     getUserProfile,
     getUserPosts,
-    updateUserProfile
+    updateUserProfile,
+    searchUsers
 } = require("../controllers/userController");
 const {
     followUser,
@@ -14,6 +15,7 @@ const {
 } = require("../controllers/followController");
 const { protect, authOptional } = require("../middleware/auth");
 
+router.get("/search", protect, searchUsers);
 router.get("/:handle", authOptional, getUserProfile);
 router.get("/:handle/posts", authOptional, getUserPosts);
 router.patch("/profile", protect, updateUserProfile);

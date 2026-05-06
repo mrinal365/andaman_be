@@ -12,5 +12,7 @@ module.exports = {
         follow:      { inapp: true,  push: true,  email: false },
         resharePost: { inapp: true,  push: false, email: false },
         message:     { inapp: true,  push: true,  email: false },
+        tagPost:     { inapp: true,  push: true,  email: false },
+        tagComment:  { inapp: true,  push: true,  email: false },
     }
 };
