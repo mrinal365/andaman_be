@@ -81,7 +81,9 @@ exports.getPostById = async (postId) => {
     const post = await Post.findOne({
         _id: postId,
         status: "published"
-    }).lean();
+    }).populate("authorId", "name verified _id handle avatar")
+    .populate("taggedUsers", "name verified _id handle avatar")
+    .lean();
 
     if (!post) throw new Error("Post not found");
 

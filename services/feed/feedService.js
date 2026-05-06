@@ -59,8 +59,9 @@ async function fetchPosts(query, userId, cursor, limit = 20) {
     const posts = await Post.find(query)
         .sort({ createdAt: -1, _id: -1 })
         .limit(limit + 1)
-        .select("authorId type createdAt feed images stats")
+        .select("authorId type createdAt feed images stats taggedUsers")
         .populate("authorId", "name verified _id handle avatar")
+        .populate("taggedUsers", "name verified _id handle avatar")
         .lean();
 
     const hasMore = posts.length > limit;
@@ -171,8 +172,9 @@ exports.getSavedPosts = async (userId, cursor, limit = 20) => {
     const postIds = savedInteractions.map(i => i.postId);
 
     const posts = await Post.find({ _id: { $in: postIds } })
-        .select("authorId type createdAt feed images stats")
+        .select("authorId type createdAt feed images stats taggedUsers")
         .populate("authorId", "name verified _id handle avatar")
+        .populate("taggedUsers", "name verified _id handle avatar")
         .lean();
 
     // Maintain the saved-order (newest saved first)
