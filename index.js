@@ -57,6 +57,7 @@ app.use("/api", require("./routes/interactionRoutes"));
 app.use("/api", require("./routes/postRoutes"));
 app.use("/api", require("./routes/commentRoutes"));
 app.use("/api", require("./routes/viewRoutes"));
+app.use("/api", require("./routes/storyRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 
 // Upload routes
