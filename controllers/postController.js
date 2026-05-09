@@ -13,8 +13,7 @@ exports.createPost = async (req, res, next) => {
 exports.getPost = async (req, res, next) => {
     try {
         const data = await service.getPostById(
-            req.params.postId,
-            req.user?._id
+            req.params.postId
         );
         res.json(data);
     } catch (e) { next(e); }
