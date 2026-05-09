@@ -70,7 +70,7 @@ exports.send = async ({ recipient, sender, type, title, body, data = {} }) => {
 exports.getForUser = async (userId, { page = 1, limit = 20 } = {}) => {
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [notifications, total, unreadCount] = await Promise.all([
+    const [notifications, total, unreadCount, uniqueConvos] = await Promise.all([
         Notification.find({ recipient: userId })
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -78,7 +78,8 @@ exports.getForUser = async (userId, { page = 1, limit = 20 } = {}) => {
             .populate('sender', 'name avatar handle verified')
             .lean(),
         Notification.countDocuments({ recipient: userId }),
-        Notification.countDocuments({ recipient: userId, read: false }),
+        Notification.countDocuments({ recipient: userId, read: false, type: { $ne: 'message' } }),
+        Notification.distinct('data.conversationId', { recipient: userId, read: false, type: 'message' }),
     ]);
 
     return {
@@ -89,7 +90,9 @@ exports.getForUser = async (userId, { page = 1, limit = 20 } = {}) => {
             total,
             hasMore: skip + notifications.length < total,
         },
-        unreadCount,
+        unreadCount: unreadCount,
+        unreadMessages: new Set(uniqueConvos.filter(Boolean).map(id => id.toString())).size,
+        unreadConversationIds: Array.from(new Set(uniqueConvos.filter(Boolean).map(id => id.toString()))),
     };
 };
 
@@ -119,7 +122,18 @@ exports.markMultipleRead = async (notificationIds, userId) => {
 
 
 exports.getUnreadCount = async (userId) => {
-    return Notification.countDocuments({ recipient: userId, read: false });
+    const [unreadCount, uniqueConvos] = await Promise.all([
+        Notification.countDocuments({ recipient: userId, read: false, type: { $ne: 'message' } }),
+        Notification.distinct('data.conversationId', { recipient: userId, read: false, type: 'message' })
+    ]);
+
+    const unreadConversationIds = Array.from(new Set(uniqueConvos.filter(Boolean).map(id => id.toString())));
+
+    return {
+        unreadCount,
+        unreadMessages: unreadConversationIds.length,
+        unreadConversationIds
+    };
 };
 
 exports.deleteOne = async (notificationId, userId) => {

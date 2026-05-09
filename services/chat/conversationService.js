@@ -115,13 +115,40 @@ exports.getConversations = async (userId) => {
 
 // MARK AS READ
 exports.markAsRead = async (userId, conversationId) => {
-    await ConversationParticipant.updateOne(
-        { userId, conversationId },
-        {
-            lastReadAt: new Date(),
-            unreadCount: 0,
-        }
-    );
+    const Notification = require("../../models/Notification");
+    const mongoose = require("mongoose");
+
+    const convoIdStr = conversationId.toString();
+    const convoIdObj = mongoose.Types.ObjectId.isValid(convoIdStr) 
+        ? new mongoose.Types.ObjectId(convoIdStr) 
+        : null;
+
+    const query = { 
+        recipient: userId, 
+        type: 'message', 
+        read: false,
+        $or: [
+            { 'data.conversationId': convoIdStr },
+            { 'data.conversationId': convoIdObj }
+        ].filter(q => q['data.conversationId'] !== null)
+    };
+
+    await Promise.all([
+        ConversationParticipant.updateOne(
+            { userId, conversationId },
+            {
+                lastReadAt: new Date(),
+                unreadCount: 0,
+            }
+        ),
+        Notification.updateMany(
+            query,
+            { 
+                read: true, 
+                readAt: new Date() 
+            }
+        )
+    ]);
 
     return { success: true };
 };
