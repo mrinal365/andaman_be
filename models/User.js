@@ -61,6 +61,10 @@ const UserSchema = new mongoose.Schema({
         enum: Object.values(USER_ROLES),
         default: USER_ROLES.USER
     },
+    blockedByAdmin: {
+        type: Boolean,
+        default: false
+    },
     stats: {
         posts: { type: Number, default: 0 },
         followers: { type: Number, default: 0 },
