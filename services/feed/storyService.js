@@ -18,7 +18,7 @@ exports.createStory = async (userId, imageUrl) => {
     });
 
     if (count >= 5) {
-        throw new Error("You have reached your daily limit of 5 stories.");
+        throw new Error("You have reached your daily limit for posting stories. Please try again tomorrow.");
     }
 
     const story = await Story.create({

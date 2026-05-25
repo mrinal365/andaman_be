@@ -102,7 +102,7 @@ exports.replyComment = async (parentCommentId, userId, text, taggedUsers = []) =
     );
 
     // 🔥 populate author and rename for consistency
-    const populatedReply = await Comment.findById(reply._id)
+    const populatedReply = await Comment.findById(comment._id)
         .populate("authorId", "name avatar verified _id")
         .populate("taggedUsers", "name handle avatar verified _id")
         .lean();
@@ -118,7 +118,7 @@ exports.replyComment = async (parentCommentId, userId, text, taggedUsers = []) =
             type: "reply",
             title: "Someone replied to your comment",
             body: text.slice(0, 80),
-            data: { postId: parent.postId, commentId: parentCommentId, replyId: reply._id },
+            data: { postId: parent.postId, commentId: parentCommentId, replyId: comment._id },
         });
     }
 
@@ -132,7 +132,7 @@ exports.replyComment = async (parentCommentId, userId, text, taggedUsers = []) =
                 type: "tagComment",
                 title: `${author?.name || 'Someone'} tagged you in a reply`,
                 body: text.slice(0, 80),
-                data: { postId: parent.postId, commentId: parentCommentId, replyId: reply._id },
+                data: { postId: parent.postId, commentId: parentCommentId, replyId: comment._id },
             });
         });
     }

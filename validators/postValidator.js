@@ -54,14 +54,24 @@ exports.createNewsSchema = z.object({
 /* ---------------- UPDATE ---------------- */
 
 const updateContent = z.object({
-    shortText: z.string().min(1).max(700)
+    shortText: z.string().max(700).optional()
 });
 
 exports.createUpdateSchema = z.object({
     type: z.literal("update"),
-    content: updateContent,
+    content: updateContent.optional(),
     images
-});
+}).refine(
+    data => {
+        const hasText = typeof data.content?.shortText === 'string' && data.content.shortText.trim().length > 0;
+        const hasImages = Array.isArray(data.images) && data.images.length > 0;
+        return hasText || hasImages;
+    },
+    {
+        message: "Either text or at least one image is required for an update post",
+        path: ["content", "shortText"]
+    }
+);
 
 
 /* ---------------- COMBINED CREATE ---------------- */
@@ -80,7 +90,7 @@ exports.updatePostSchema = z.object({
         title: z.string().min(3).max(200).optional(),
         body: z.string().min(50).max(50000).optional(),
         text: z.string().min(20).max(10000).optional(),
-        shortText: z.string().min(1).max(700).optional()
+        shortText: z.string().max(700).optional()
     }).optional(),
 
     images: images

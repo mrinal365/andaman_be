@@ -212,6 +212,32 @@ All interactions are **Toggles**.
 
 ---
 
+## 🔐 Google Login Flow
+
+The application implements a unified Google OAuth integration for a seamless onboarding experience.
+
+### 📱 Frontend (Andaman FE)
+1. **Google SDK**: Uses `@react-oauth/google` for authentication.
+2. **Implicit Flow**: Retrieves an `access_token` directly from Google via `useGoogleLogin`.
+3. **Backend Handshake**: Sends the `access_token` to the backend `POST /api/v1/auth/google` for verification.
+4. **Onboarding UX**: 
+   - If the user is **new** (`isNewUser: true`), a `GoogleProgressModal` is displayed to provide visual feedback during the automated account setup.
+   - If the user is **returning**, they are redirected directly to the feed.
+
+### ⚙️ Backend (Andaman BE)
+1. **Endpoint**: `POST /api/v1/auth/google`
+2. **Verification**: Validates the token using Google's UserInfo API (`https://www.googleapis.com/oauth2/v3/userinfo`).
+3. **Account Linking**: 
+   - Checks if a user with the Google email already exists in the database.
+   - If found, it simply logs them in and returns a JWT.
+4. **Auto-Registration (New Users)**:
+   - **Unique Handle**: Automatically generates a unique handle by appending a random 10-digit number to the user's name (e.g., `johndoe7283940561`).
+   - **Secure Password**: Generates a random 20-character secure password.
+   - **Profile Sync**: Syncs the user's name and profile picture from their Google account.
+5. **Response**: Returns the JWT token, user metadata, and an `isNewUser` flag to the frontend.
+
+---
+
 ## 🛠️ Global Errors
 | Case | Status | Response |
 | :--- | :--- | :--- |
